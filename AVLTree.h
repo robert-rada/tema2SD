@@ -254,10 +254,11 @@ void avlFixUp(TTree *tree, TreeNode *node)
 
 void insert(TTree *tree, void *elem, void *info) 
 {
-    // 1. Create new node
     TreeNode *new_node = createTreeNode(tree, elem, info);
-    // 2. Iterate to down-wards to nil 
     TreeNode *node = tree->root;
+
+    if (isEmpty(tree))
+        tree->root = new_node;
 
     unsigned char duplicate = 0;
     while (node != tree->nil)
@@ -294,14 +295,15 @@ void insert(TTree *tree, void *elem, void *info)
         }
     }
 
-    // 4. Update linked list
+    // Update linked list
 
     if (duplicate)
     {
         new_node->next = node->end->next;
         node->end->next = new_node;
         new_node->prev = node->end;
-        new_node->next->prev = new_node;
+        if (new_node->next != tree->nil)
+            new_node->next->prev = new_node;
         node->end = new_node;
     }
     else
@@ -312,35 +314,59 @@ void insert(TTree *tree, void *elem, void *info)
             {
                 new_node->next = node;
                 new_node->prev = node->prev;
-                node->prev->next = new_node;
+                if (node->prev != tree->nil)
+                    node->prev->next = new_node;
                 node->prev = new_node;
                 break;
             }
         }
 
+        if (minimum(tree, tree->root)->prev != tree->nil)
+            fprintf(stderr, "BAD1\n");
+
         if (node == tree->nil)
         {
-            node = maximum(tree, tree->root);
-            if (node != new_node)
+            node = predecessor(tree, new_node);
+            if (node != tree->nil)
             {
-                node->next = new_node;
+                if (node != tree->nil)
+                    node->next = new_node;
                 new_node->prev = node;
             }
         }
+        if (minimum(tree, tree->root)->prev != tree->nil)
+            fprintf(stderr, "BAD2\n");
+
     }
-
-    if (isEmpty(tree))
-        tree->root = new_node;
-
-    // 5. Update size of tree and call fix-up
 
     tree->size++;
     avlFixUp(tree, new_node);
+        if (minimum(tree, tree->root)->prev != tree->nil)
+            fprintf(stderr, "BAD3\n");
+
 }
 
-void delete(TTree* tree, void* elem){
+void delete(TTree *tree, void *elem)
+{
+    return;
+    TreeNode *node = search(tree, tree->root, elem);
 
+    if (node == tree->nil)
+        return;
 
+    tree->size--;
+
+    // delete duplicate from list
+    if (node->end != node)
+    {
+        TreeNode *t = node;
+        node->prev->next = node->next;
+        node->next->prev = node->prev;
+        node->end = node->prev;
+        return;
+    }
+
+    // delete node from tree
 
 	/* 
 	 * TODO: 
