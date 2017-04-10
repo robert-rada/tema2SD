@@ -77,7 +77,7 @@ TreeNode* createTreeNode(TTree *tree, void* value, void* info)
     new_node->rt = tree->nil;
     new_node->next = tree->nil;
     new_node->prev = tree->nil;
-    new_node->end = tree->nil;
+    new_node->end = new_node;
     // 4. Set height for the new node
     new_node->height = 1;
 
@@ -119,7 +119,7 @@ TreeNode* minimum(TTree *tree, TreeNode *node)
 {
     while (node->lt != tree->nil)
         node = node->lt;
-
+    
     return node;
 }
 
@@ -224,26 +224,118 @@ int avlGetBalance(TTree *tree, TreeNode *node)
     return left_height - right_height;
 }
 
+void avlFixUp(TTree *tree, TreeNode *node)
+{
+    while (node != tree->nil)
+    {
+        int balance = avlGetBalance(tree, node);
 
-void avlFixUp(TTree* tree, TreeNode* y){
-   	/* 
-	 * TODO: 
-	 * 1. Iterate up-wards to nil
-     * 2. Update hight and get balance
-     * 3. Test for each case
-	 */
+        // right subtree has bigger height
+        if (balance < -1)
+        {
+            if (avlGetBalance(tree, node->rt) > 0)
+                avlRotateRight(tree, node->rt);
+
+            avlRotateLeft(tree, node);
+        }
+        //left subtree has bigger height
+        else if (balance > 1)
+        {
+            if (avlGetBalance(tree, node->lt) < 0)
+                avlRotateLeft(tree, node->lt);
+
+            avlRotateRight(tree, node);
+        }
+
+        node->height = MAX(node->lt->height, node->rt->height) + 1;
+        node = node->pt;
+    }
 }
 
-void insert(TTree* tree, void* elem, void* info) {
-	/* 
-	 * TODO: 
-	 * 1. Create new node
-     * 2. Iterate to down-wards to nil 
-     *    (duplicates are added to the list for the search node)
-     * 3. Update tree 
-     * 4. Update linked list
-     * 5. Update size of tree and call fix-up
-	 */
+void insert(TTree *tree, void *elem, void *info) 
+{
+    // 1. Create new node
+    TreeNode *new_node = createTreeNode(tree, elem, info);
+    // 2. Iterate to down-wards to nil 
+    TreeNode *node = tree->root;
+
+    unsigned char duplicate = 0;
+    while (node != tree->nil)
+    {
+        int compare_result = tree->compare(new_node->elem, node->elem);
+
+        if (compare_result == 0)
+        {
+            duplicate = 1;
+            break;
+        }
+        
+        if (compare_result < 0)
+        {
+            if (node->lt != tree->nil)
+                node = node->lt;
+            else
+            {
+                node->lt = new_node;
+                new_node->pt = node;
+                break;
+            }
+        }
+        else
+        {
+            if (node->rt != tree->nil)
+                node = node->rt;
+            else
+            {
+                node->rt = new_node;
+                new_node->pt = node;
+                break;
+            }
+        }
+    }
+
+    // 4. Update linked list
+
+    if (duplicate)
+    {
+        new_node->next = node->end->next;
+        node->end->next = new_node;
+        new_node->prev = node->end;
+        new_node->next->prev = new_node;
+        node->end = new_node;
+    }
+    else
+    {
+        for (node = minimum(tree, tree->root); node != tree->nil; node = node->next)
+        {
+            if (tree->compare(new_node->elem, node->elem) < 0)
+            {
+                new_node->next = node;
+                new_node->prev = node->prev;
+                node->prev->next = new_node;
+                node->prev = new_node;
+                break;
+            }
+        }
+
+        if (node == tree->nil)
+        {
+            node = maximum(tree, tree->root);
+            if (node != new_node)
+            {
+                node->next = new_node;
+                new_node->prev = node;
+            }
+        }
+    }
+
+    if (isEmpty(tree))
+        tree->root = new_node;
+
+    // 5. Update size of tree and call fix-up
+
+    tree->size++;
+    avlFixUp(tree, new_node);
 }
 
 void delete(TTree* tree, void* elem){
