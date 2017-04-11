@@ -346,32 +346,24 @@ void insert(TTree *tree, void *elem, void *info)
 
 }
 
-void delete(TTree *tree, void *elem)
+void deleteTreeNode(TTree *tree, TreeNode *node)
 {
-    return;
-    TreeNode *node = search(tree, tree->root, elem);
+    TreeNode *substitute_node;
 
-    if (node == tree->nil)
-        return;
-
-    tree->size--;
-
-    // delete duplicate from list
-    if (node->end != node)
+    // the node has 1 or 0 childs
+    if (node->lt == tree->nil || node->rt == tree->nil)
     {
-        TreeNode *t = node;
-        node->prev->next = node->next;
-        node->next->prev = node->prev;
-        node->end = node->prev;
-        return;
+        substitute_node = node->lt;
+        if (node->rt != tree->nil)
+            subsitute_node = node->rt;
+    }
+    else
+    {
+        substitute_node = minimum(tree, node->rt);
     }
 
-    // delete node from tree
-
-	/* 
+    /*
 	 * TODO: 
-	 * 1. Search for the node
-     * 2. If duplicate delete from the list and exit
      * 3. Otherwise perform tree deletion and update linked list at the end
      * 4. Update size and call fix-up
      * 
@@ -381,7 +373,34 @@ void delete(TTree *tree, void *elem)
      * 2. Changing the links with the splice out node is the way to GO,
      *    exchaning node fields does not work in this case,
           you might have duplicates for the splice-out node!!!! 
-	 */
+          */
+}
+
+void delete(TTree *tree, void *elem)
+{
+    TreeNode *node = search(tree, tree->root, elem);
+
+    if (node == tree->nil)
+        return;
+
+    tree->size--;
+
+    // update list
+    if (node->prev != tree->nil)
+        node->prev->next = node->next;
+    if (node->next != tree->nil)
+        node->next->prev = node->prev;
+
+    // delete duplicate from list
+    if (node->end != node)
+    {
+        node->end = node->prev;
+        free(node);
+        return;
+    }
+
+    // delete node from tree
+    deleteTreeNode(tree, node);
 }
 
 void destroyTree(TTree* tree){
