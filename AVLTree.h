@@ -308,6 +308,7 @@ void insert(TTree *tree, void *elem, void *info)
     }
     else
     {
+        // remake this using predecessor or successor
         for (node = minimum(tree, tree->root); node != tree->nil; node = node->next)
         {
             if (tree->compare(new_node->elem, node->elem) < 0)
@@ -321,9 +322,6 @@ void insert(TTree *tree, void *elem, void *info)
             }
         }
 
-        if (minimum(tree, tree->root)->prev != tree->nil)
-            fprintf(stderr, "BAD1\n");
-
         if (node == tree->nil)
         {
             node = predecessor(tree, new_node);
@@ -334,79 +332,126 @@ void insert(TTree *tree, void *elem, void *info)
                 new_node->prev = node;
             }
         }
-        if (minimum(tree, tree->root)->prev != tree->nil)
-            fprintf(stderr, "BAD2\n");
 
     }
 
     tree->size++;
     avlFixUp(tree, new_node);
-        if (minimum(tree, tree->root)->prev != tree->nil)
-            fprintf(stderr, "BAD3\n");
-
 }
 
 void deleteTreeNode(TTree *tree, TreeNode *node)
 {
-    TreeNode *substitute_node;
+    TreeNode *substitute = tree->nil;
+    TreeNode *sub_child;
 
-    // the node has 1 or 0 childs
+    // less than 2 children case
     if (node->lt == tree->nil || node->rt == tree->nil)
     {
-        substitute_node = node->lt;
-        if (node->rt != tree->nil)
-            subsitute_node = node->rt;
+        if (node->lt != tree->nil)
+            substitute = node->lt;
+        else
+            substitute = node->rt;
+        sub_child = substitute;
+
+        if (node->pt != tree->nil)
+        {
+            if (node->pt->lt == node)
+                node->pt->lt = substitute;
+            else
+                node->pt->rt = substitute;
+        }
+        if (substitute != tree->nil)
+            substitute->pt = node->pt;
+        
+        if (sub_child == tree->nil)
+            sub_child = node->pt;
     }
     else
     {
-        substitute_node = minimum(tree, node->rt);
+        substitute = minimum(tree, node->rt);
+        sub_child = substitute->rt;
+
+        // link sub_child with parent of sub
+        if (substitute != node->rt)
+        {
+            if (sub_child != tree->nil)
+                sub_child->pt = substitute->pt;
+            substitute->pt->lt = sub_child;
+        }
+
+        // link sub with left child of node
+        substitute->lt = node->lt;
+        node->lt->pt = substitute;
+
+        // link sub with right child of node
+        if (node->rt != substitute)
+            substitute->rt = node->rt;
+        if (substitute->rt != tree->nil)
+            substitute->rt->pt = substitute;
+
+        // link sub with parent of node
+        substitute->pt = node->pt;
+        if (node->pt != tree->nil)
+        {
+            if (node->pt->lt == node)
+                node->pt->lt = substitute;
+            else
+                node->pt->rt = substitute;
+        }
     }
 
-    /*
-	 * TODO: 
-     * 3. Otherwise perform tree deletion and update linked list at the end
-     * 4. Update size and call fix-up
-     * 
-     * Hints:
-     * 1. If you MUST delete a node from the tree than it has no duplicates!
-     *
-     * 2. Changing the links with the splice out node is the way to GO,
-     *    exchaning node fields does not work in this case,
-          you might have duplicates for the splice-out node!!!! 
-          */
+    if (sub_child == tree->nil)
+        sub_child = substitute;
+
+    if (tree->root == node)
+        tree->root = substitute;
+
+    avlFixUp(tree, sub_child);
+    destroyTreeNode(tree, node);
 }
 
 void delete(TTree *tree, void *elem)
 {
-    TreeNode *node = search(tree, tree->root, elem);
+    TreeNode *tree_node = search(tree, tree->root, elem);
+    TreeNode *list_node = tree_node->end;
 
-    if (node == tree->nil)
+    if (tree_node == tree->nil)
         return;
 
     tree->size--;
 
     // update list
-    if (node->prev != tree->nil)
-        node->prev->next = node->next;
-    if (node->next != tree->nil)
-        node->next->prev = node->prev;
+    if (list_node->prev != tree->nil)
+        list_node->prev->next = list_node->next;
+    if (list_node->next != tree->nil)
+        list_node->next->prev = list_node->prev;
 
     // delete duplicate from list
-    if (node->end != node)
+    if (tree_node != list_node)
     {
-        node->end = node->prev;
-        free(node);
-        return;
+        tree_node->end = list_node->prev;
+        destroyTreeNode(tree, list_node);
     }
-
-    // delete node from tree
-    deleteTreeNode(tree, node);
+    else
+    {
+        // delete node from tree
+        deleteTreeNode(tree, tree_node);
+    }
 }
 
-void destroyTree(TTree* tree){
-	// TODO:
+void destroyTree(TTree* tree)
+{
+    TreeNode *node = minimum(tree, tree->root);
 
-	// Hint: Can you use the list?
+    while (node != tree->nil)
+    {
+        TreeNode *t = node;
+        node = node->next;
+        destroyTreeNode(tree, t);
+    }
+
+    destroyTreeNode(tree, tree->nil);
+    free(tree);
 }
 
 
