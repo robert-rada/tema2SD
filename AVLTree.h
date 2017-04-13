@@ -308,31 +308,22 @@ void insert(TTree *tree, void *elem, void *info)
     }
     else
     {
-        // remake this using predecessor or successor
-        for (node = minimum(tree, tree->root); node != tree->nil; node = node->next)
+        node = predecessor(tree, new_node);
+        if (node != tree->nil)
         {
-            if (tree->compare(new_node->elem, node->elem) < 0)
-            {
-                new_node->next = node;
-                new_node->prev = node->prev;
-                if (node->prev != tree->nil)
-                    node->prev->next = new_node;
-                node->prev = new_node;
-                break;
-            }
+            new_node->next = node->next;
+            if (new_node->next != tree->nil)
+                new_node->next->prev = new_node;
+            node->next = new_node;
+            new_node->prev = node;
         }
-
-        if (node == tree->nil)
+        else
         {
-            node = predecessor(tree, new_node);
+            node = successor(tree, new_node);
+            new_node->next = node;
             if (node != tree->nil)
-            {
-                if (node != tree->nil)
-                    node->next = new_node;
-                new_node->prev = node;
-            }
+                node->prev = new_node;
         }
-
     }
 
     tree->size++;
