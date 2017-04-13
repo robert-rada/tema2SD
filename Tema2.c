@@ -1,13 +1,3 @@
-/*
- ============================================================================
- Name        : Tema2.c
- Author      : Dan Novischi
- Version     :
- Copyright   : Your copyright notice
- Description : Dictionare
- ============================================================================
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,55 +6,105 @@
 /* Lungimea maxima a unui buffer */
 #define BUFLEN 1024
 
-/* Lungimea unui element din arbore */
-#define ELEMENT_TREE_LENGTH 3
+#define STR_ELEM_LEN 3
 
 /* Range of models*/
-typedef struct Range{
+typedef struct Range
+{
 	int *index; // Array of models in the range
 	int size; // Number of array elements
 	int capacity; // Array capacity
-}Range;
+} Range;
 
-void* createStrElement(void* str){
-	// TODO: 2
+void *createStrElement(void *str)
+{
+    void *ret = malloc(STR_ELEM_LEN);
+    for (int i = 0; i < STR_ELEM_LEN; i++)
+        *(char*)(ret+i) = *(char*)(str+i);
+    return ret;
 }
 
-void destroyStrElement(void* elem){
-	// TODO: 2
+void destroyStrElement(void* elem)
+{
+    free(elem);
 }
 
-
-void* createPriceElement(void* price){
-	// TODO: 2
-	return NULL;
+void *createPriceElement(void *price)
+{
+    long *ret = malloc(sizeof(long));
+    *ret = *(long*)price;
+    return ret;
 }
 
-void destroyPriceElement(void* price){
-	// TODO: 2
+void destroyPriceElement(void *price)
+{
+    free((long*)price);
 }
 
-void* createIndexInfo(void* index){
-	// TODO: 2
-	return NULL;
+void *createIndexInfo(void *index)
+{
+    int *ret = malloc(sizeof(int));
+    *ret = *(int*)index;
+    return ret;
 }
 
-void destroyIndexInfo(void* index){
-	// TODO: 2
+void destroyIndexInfo(void *index)
+{
+    free((int*)index);
 }
 
-int compareStr(void* str1, void* str2){
-	// TODO: 2
-	return -2;
+int compareStr(void *str1, void *str2)
+{
+    for (int i = 0; i < STR_ELEM_LEN; i++)
+    {
+        if ( *(char*)(str1+i) < *(char*)(str2+i) )
+            return -1;
+        if ( *(char*)(str1+i) > *(char*)(str2+i) )
+            return 1;
+    }
+
+    return 0;
 }
 
-int comparePrice(void* price1, void* price2){
-	// TODO: 2
-	return -2;
+int comparePrice(void *price1, void *price2)
+{
+    if (*(long*)price1 < *(long*)price2)
+        return -1;
+    if (*(long*)price1 > *(long*)price2)
+        return 1;
+    return 0;
 }
 
-void buildTreesFromFile(char* fileName, TTree* modelTree, TTree* priceTree){
-	// TODO: 2
+void buildTreesFromFile(char *fileName, TTree *modelTree, TTree *priceTree)
+{
+    FILE *input_file = fopen("input.csv", "r");
+
+    char input[BUFLEN+1];
+    char str[BUFLEN];
+    int file_index = 0;
+    while (fgets(input, BUFLEN, input_file))
+    {
+        int i = 0;
+        int index = 0;
+        while (input[index] != ',')
+        {
+            str[i++] = input[index++];
+        }
+
+        for (int j = i; j < STR_ELEM_LEN; j++)
+            str[j] = 0;
+
+        long price = 0;
+        for (index = index+1; index < strlen(input) && input[index] >= '0'; index++)
+        {
+            price = price * 10 + (long)input[index] - (long)'0';
+        }
+
+        insert(modelTree, str, file_index);
+        printf("%s %ld\n", str, price);
+    }
+
+    fclose(input_file);
 }
 
 Range* modelGroupQuery(TTree* tree, char* q){
