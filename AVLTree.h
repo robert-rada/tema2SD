@@ -308,7 +308,7 @@ void insert(TTree *tree, void *elem, void *info)
     }
     else
     {
-        node = predecessor(tree, new_node);
+        node = predecessor(tree, new_node)->end;
         if (node != tree->nil)
         {
             new_node->next = node->next;
