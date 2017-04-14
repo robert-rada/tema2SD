@@ -57,6 +57,8 @@ int compareStr(void *str1, void *str2)
 {
     for (int i = 0; i < STR_ELEM_LEN; i++)
     {
+        if ( *(char*)(str1+i) == 0 || *(char*)(str2+i) == 0)
+            return 0;
         if ( *(char*)(str1+i) < *(char*)(str2+i) )
             return -1;
         if ( *(char*)(str1+i) > *(char*)(str2+i) )
@@ -109,8 +111,100 @@ void buildTreesFromFile(char *fileName, TTree *modelTree, TTree *priceTree)
     fclose(input_file);
 }
 
-Range* modelGroupQuery(TTree* tree, char* q){
-	// TODO: 3
+void pushBack(Range *range, void *elem)
+{
+    if (range->size == range->capacity)
+    {
+        range->capacity *= 2;
+        range->index = realloc(range->index, sizeof(int) * range->capacity);
+    }
+
+    range->index[range->size++] = *(int*)elem;
+}
+
+TreeNode *findLeftRangeLimit(TTree *tree, char *q)
+{
+    TreeNode *node = tree->root;
+    unsigned char found = 0;
+
+    while (1)
+    {
+        if (tree->compare(q, node->elem) <= 0)
+        {
+            if (tree->compare(q, node->elem) == 0)
+                found = 1;
+
+            if (node->lt != tree->nil)
+                node = node->lt;
+            else
+                break;
+        }
+        else
+        {
+            if (node->rt != tree->nil)
+                node= node->rt;
+            else
+                break;
+        }
+    }
+
+    if (!found)
+        return tree->nil;
+
+    if (tree->compare(q, node->elem) != 0)
+        node = node->end->next;
+
+    return node;
+}
+
+TreeNode *findRightRangeLimit(TTree *tree, char *q)
+{
+    TreeNode *node = tree->root;
+
+    while (1)
+    {
+        if (tree->compare(q, node->elem) < 0)
+        {
+            if (node->lt != tree->nil)
+                node = node->lt;
+            else
+                break;
+        }
+        else
+        {
+            if (node->rt != tree->nil)
+                node= node->rt;
+            else
+                break;
+        }
+    }
+
+    if (tree->compare(q, node->elem) == 0)
+        node = node->end->next;
+
+    return node;
+}
+
+Range *modelGroupQuery(TTree *tree, char *q)
+{
+    Range *range = malloc(sizeof(Range));
+    range->size = 0;
+    range->capacity = 1;
+    range->index = malloc(sizeof(int) * range->capacity);
+
+    TreeNode *left = findLeftRangeLimit(tree, q);
+    TreeNode *right = findRightRangeLimit(tree, q);
+
+    if (left == tree->nil)
+        return range;
+
+    while (left != right)
+    {
+        pushBack(range, left->info);
+        left = left->next;
+    }
+
+    return range;
 }
 Range* modelRangeQuery(TTree* tree, char* q, char* p){
 	// TODO: 4b
