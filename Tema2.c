@@ -95,13 +95,15 @@ void buildTreesFromFile(char *fileName, TTree *modelTree, TTree *priceTree)
             str[j] = 0;
 
         long price = 0;
-        for (index = index+1; index < strlen(input) && input[index] >= '0'; index++)
+        for (index = index+1; index < strlen(input) && input[index] >= '0';
+                index++)
         {
             price = price * 10 + (long)input[index] - (long)'0';
         }
 
-        insert(modelTree, str, file_index);
-        printf("%s %ld\n", str, price);
+        insert(modelTree, str, &file_index);
+        insert(priceTree, &price, &file_index);
+        file_index += strlen(input);
     }
 
     fclose(input_file);
@@ -180,6 +182,10 @@ int main(void) {
 
 
 void inorderModelTreePrint(TTree* tree, TreeNode* node){
+    if (node == minimum(tree, tree->root))
+            {
+                int stop = 1;
+            }
 	if(node != tree->nil){
 		inorderModelTreePrint(tree, node->lt);
 		TreeNode* begin = node;
