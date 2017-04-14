@@ -111,6 +111,16 @@ void buildTreesFromFile(char *fileName, TTree *modelTree, TTree *priceTree)
     fclose(input_file);
 }
 
+Range *newRange()
+{
+    Range *range = malloc(sizeof(Range));
+    range->size = 0;
+    range->capacity = 1;
+    range->index = malloc(sizeof(int) * range->capacity);
+
+    return range;
+}
+
 void pushBack(Range *range, void *elem)
 {
     if (range->size == range->capacity)
@@ -122,18 +132,14 @@ void pushBack(Range *range, void *elem)
     range->index[range->size++] = *(int*)elem;
 }
 
-TreeNode *findLeftRangeLimit(TTree *tree, char *q)
+TreeNode *findLeftRangeLimit(TTree *tree, void *q)
 {
     TreeNode *node = tree->root;
-    unsigned char found = 0;
 
     while (1)
     {
         if (tree->compare(q, node->elem) <= 0)
         {
-            if (tree->compare(q, node->elem) == 0)
-                found = 1;
-
             if (node->lt != tree->nil)
                 node = node->lt;
             else
@@ -148,16 +154,15 @@ TreeNode *findLeftRangeLimit(TTree *tree, char *q)
         }
     }
 
-    if (!found)
-        return tree->nil;
-
-    if (tree->compare(q, node->elem) != 0)
-        node = node->end->next;
+    if (tree->compare(q, node->elem) <= 0)
+        node = node->prev;
+    else
+        node = node->end;
 
     return node;
 }
 
-TreeNode *findRightRangeLimit(TTree *tree, char *q)
+TreeNode *findRightRangeLimit(TTree *tree, void *q)
 {
     TreeNode *node = tree->root;
 
@@ -179,7 +184,7 @@ TreeNode *findRightRangeLimit(TTree *tree, char *q)
         }
     }
 
-    if (tree->compare(q, node->elem) == 0)
+    if (tree->compare(q, node->elem) >= 0)
         node = node->end->next;
 
     return node;
@@ -187,17 +192,18 @@ TreeNode *findRightRangeLimit(TTree *tree, char *q)
 
 Range *modelGroupQuery(TTree *tree, char *q)
 {
-    Range *range = malloc(sizeof(Range));
-    range->size = 0;
-    range->capacity = 1;
-    range->index = malloc(sizeof(int) * range->capacity);
+    Range *range = newRange();
 
     TreeNode *left = findLeftRangeLimit(tree, q);
     TreeNode *right = findRightRangeLimit(tree, q);
 
-    if (left == tree->nil)
+    if (left == right)
         return range;
 
+    if (left != tree->nil)
+        left = left->next;
+    else
+        left = minimum(tree, tree->root);
     while (left != right)
     {
         pushBack(range, left->info);
@@ -206,17 +212,54 @@ Range *modelGroupQuery(TTree *tree, char *q)
 
     return range;
 }
-Range* modelRangeQuery(TTree* tree, char* q, char* p){
-	// TODO: 4b
-	return NULL;
+Range *modelRangeQuery(TTree *tree, char *q, char *p)
+{
+    Range *range = newRange();
+
+    TreeNode *left = findLeftRangeLimit(tree, q);
+    TreeNode *right = findRightRangeLimit(tree, p);
+
+    if (left == right)
+        return range;
+
+    if (left != tree->nil)
+        left = left->next;
+    else
+        left = minimum(tree, tree->root);
+    while (left != right)
+    {
+        pushBack(range, left->info);
+        left = left->next;
+    }
+
+    return range;
 }
-Range* priceRangeQuery(TTree* tree, long q, long p){
-	// TODO: 4a
-	return NULL;
+
+Range *priceRangeQuery(TTree *tree, long q, long p)
+{
+    Range *range = newRange();
+
+    TreeNode *left = findLeftRangeLimit(tree, &q);
+    TreeNode *right = findRightRangeLimit(tree, &p);
+
+    if (left == right)
+        return range;
+
+    if (left != tree->nil)
+        left = left->next;
+    else
+        left = minimum(tree, tree->root);
+    while (left != right)
+    {
+        pushBack(range, left->info);
+        left = left->next;
+    }
+
+    return range;
 }
+
 Range* modelPriceRangeQuery(char* fileName, TTree* tree, char* m1, char* m2, long p1, long p2){
-	// TODO: 5
-	return NULL;
+    return newRange();
 }
 
 
