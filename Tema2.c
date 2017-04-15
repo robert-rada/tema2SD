@@ -258,8 +258,34 @@ Range *priceRangeQuery(TTree *tree, long q, long p)
     return range;
 }
 
-Range* modelPriceRangeQuery(char* fileName, TTree* tree, char* m1, char* m2, long p1, long p2){
-    return newRange();
+Range *modelPriceRangeQuery(char *file_name, TTree *tree, char *m1, char *m2,
+        long p1, long p2)
+{
+    Range *model_range = modelRangeQuery(tree, m1, m2);
+    Range *range = newRange();
+
+    if (file_name == NULL)
+        return range;
+    FILE *input = fopen(file_name, "r");
+
+    char buffer[BUFLEN+1];
+    for (int i = 0; i < model_range->size; i++)
+    {
+        fseek(input, model_range->index[i], SEEK_SET);
+        if (fgets(buffer, BUFLEN, input) != NULL)
+        {
+            strtok(buffer, ",");
+            long price = atol(strtok(NULL, ","));
+            if (price >= p1 && price <= p2)
+                pushBack(range, &model_range->index[i]);
+        }
+    }
+
+    fclose(input);
+    free(model_range->index);
+    free(model_range);
+
+    return range;
 }
 
 
@@ -290,7 +316,7 @@ int main(void) {
 	printf("\n\n");
 
 	printf("Price Range Search:\n");
-	Range *range2 = priceRangeQuery(priceTree,100,400);
+	Range *range2 = priceRangeQuery(priceTree,300,600);
 	printRange(range2,"input.csv");
 	printf("\n\n");
 
